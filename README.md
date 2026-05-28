@@ -1,21 +1,38 @@
 # base-stealth-eth
 
-**Monero-style recipient privacy** on the **Base** network, using the **ERC-5564 (stealth address)** standard for **native ETH** transfers. Educational project — contracts + tests, no ZK circuit.
+> Recipient privacy for **native ETH** on the **Base** network, built on the **ERC-5564 stealth address** standard. Educational project — contracts + tests, no ZK circuit.
+
+<p>
+  <img alt="Solidity" src="https://img.shields.io/badge/Solidity-0.8.24-363636?logo=solidity&logoColor=white" />
+  <img alt="Hardhat" src="https://img.shields.io/badge/Hardhat-2.22-fff100?logo=hardhat&logoColor=black" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.4-3178c6?logo=typescript&logoColor=white" />
+  <img alt="ethers.js" src="https://img.shields.io/badge/ethers.js-v6-2535a0?logo=ethereum&logoColor=white" />
+  <img alt="Base" src="https://img.shields.io/badge/Base-L2-0052ff?logo=coinbase&logoColor=white" />
+  <img alt="Node.js" src="https://img.shields.io/badge/Node.js-22-5fa04e?logo=nodedotjs&logoColor=white" />
+  <img alt="Standard" src="https://img.shields.io/badge/EIP-5564%20%2F%206538-627eea" />
+  <img alt="License" src="https://img.shields.io/badge/License-MIT-green" />
+</p>
 
 > Ethics & legal note: this is for privacy research/education. Privacy tooling is dual-use and is heavily regulated in some jurisdictions. Do not deploy to mainnet without understanding local regulations (AML/sanctions). This is NOT audited / production-ready.
 
-## How it works (Monero analogy)
+## Concept
 
-| Monero | This project |
+A stealth address lets someone receive ETH on Base without linking the payments to a single, publicly known address.
+
+The recipient holds two key pairs:
+
+| Key | Role |
 | --- | --- |
-| spend key | `spendingPrivateKey` — used to spend funds |
-| view key | `viewingPrivateKey` — used only to detect incoming funds |
-| tx public key | `ephemeralPublicKey` published by the sender |
-| one-time output | a single-use stealth address per payment |
+| **spending key** | authorizes moving the received funds |
+| **viewing key** | only detects which incoming payments belong to them — cannot spend |
 
-Flow: the recipient publishes a **meta-address** (spending pub + viewing pub). The sender uses the public meta-address to derive a **fresh stealth address** via secp256k1 ECDH, sends ETH to it, and announces it via `ERC5564Announcer`. Only the holder of the **viewing key** can detect that a payment is theirs; only the **spending key** can move the funds. There is no on-chain link between the recipient's identity and the addresses that receive funds.
+These two public keys are combined into a single **meta-address** that the recipient publishes once (e.g. in the on-chain `ERC6538Registry`).
 
-> What is **hidden**: the recipient's identity / linkability. What is **not** hidden: the sender's address and the amount (unlike Monero's RingCT). Hiding the sender and amount as well requires a ZK-based shielded pool.
+**Sending:** the sender takes the recipient's public meta-address, generates a random ephemeral key, and via secp256k1 ECDH derives a brand-new **one-time stealth address** plus a published `ephemeralPublicKey`. ETH is sent to that fresh address and the payment is announced through `ERC5564Announcer`.
+
+**Receiving:** the recipient scans `Announcement` events. Using only the **viewing key** they can tell which announcements are addressed to them (a one-byte *view tag* makes scanning fast). Using both keys they recover the private key that controls the stealth address and can spend the funds.
+
+> What is **hidden**: the link between the recipient's identity and the addresses that receive funds. What is **not** hidden: the sender's address and the transferred amount. Hiding the sender and amount as well would require a ZK-based shielded pool.
 
 ## Contracts
 
