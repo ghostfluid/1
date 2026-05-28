@@ -1,4 +1,4 @@
-# base-stealth-eth
+# Ghost-Source
 
 > Recipient privacy for **native ETH** on the **Base** network, built on the **ERC-5564 stealth address** standard. Educational project — contracts + tests, no ZK circuit.
 
